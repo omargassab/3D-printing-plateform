@@ -11,43 +11,72 @@ import { useAuth } from "@/context/AuthContext";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
-  // Redirect if already authenticated
+  // Check if already authenticated and redirect
   useEffect(() => {
-    if (isAuthenticated) {
-      // Redirect to the page they were trying to access or home
+    if (isAuthenticated && !redirecting) {
+      setRedirecting(true);
       const from = location.state?.from || "/";
-      navigate(from);
+      console.log("Already authenticated, redirecting to:", from);
+      window.location.href = from;
     }
-  }, [isAuthenticated, navigate, location]);
+  }, [isAuthenticated, location.state, redirecting]);
 
   const handleLogin = async (email: string, password: string) => {
     try {
+      console.log("Login attempt for:", email);
       setError(null);
+
+      // Login the user
       const result = await loginUser(email, password);
 
-      if (result.success) {
-        // Update auth context
-        login(result.token, result.user);
+      if (result && result.success) {
+        console.log("Login successful, updating auth context");
+        setRedirecting(true);
 
-        // Redirect based on user role
+        // Update auth context
+        login(result.session, result.user);
+
+        // Determine redirect destination
+        let destination = "/";
         if (result.user.role === "designer") {
-          window.location.href = "/designer/dashboard";
+          destination = "/designer/dashboard";
         } else if (result.user.role === "dropshipper") {
-          window.location.href = "/dropshipper/dashboard";
+          destination = "/dropshipper/dashboard";
         } else if (result.user.role === "admin") {
-          window.location.href = "/admin/dashboard";
-        } else {
-          window.location.href = "/";
+          destination = "/admin/dashboard";
         }
+
+        console.log("Redirecting to:", destination);
+
+        // Force redirect with window.location
+        window.location.href = destination;
+        return true;
+      } else {
+        setError("Login failed. Please check your credentials.");
+        return false;
       }
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
       console.error("Login error:", err);
+      setError(err.message || "Invalid email or password");
+      return false;
     }
   };
+
+  // If already redirecting, show a loading state
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl font-medium">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,6 +96,12 @@ const LoginPage = () => {
             <Alert variant="destructive" className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {location.state?.message && (
+            <Alert className="mb-6 bg-blue-50 border-blue-200">
+              <AlertDescription>{location.state.message}</AlertDescription>
             </Alert>
           )}
 

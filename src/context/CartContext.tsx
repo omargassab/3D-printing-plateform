@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 
-type CartItem = {
+export type CartItem = {
   id: string;
   title: string;
   price: number;
@@ -35,9 +35,11 @@ const CartContext = createContext<CartContextType>({
   totalPrice: 0,
 });
 
-export const useCart = () => useContext(CartContext);
+export function useCart() {
+  return useContext(CartContext);
+}
 
-export const CartProvider = ({
+const CartProvider = ({
   children,
   initialItems = [],
 }: {
@@ -45,26 +47,63 @@ export const CartProvider = ({
   initialItems?: CartItem[];
 }) => {
   const [items, setItems] = useState<CartItem[]>(initialItems);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load cart from localStorage on mount
+  // Load cart from localStorage or sessionStorage on mount
+  const hasLoaded = React.useRef(false);
   useEffect(() => {
+    if (hasLoaded.current) return;
+    hasLoaded.current = true;
+
+    // First check localStorage
     const savedCart = localStorage.getItem("cart");
+    // Then check sessionStorage as backup
+    const tempCart = sessionStorage.getItem("tempCart");
+
+    let parsedCart = [];
+    let cartSource = null;
+
+    // Try localStorage first
     if (savedCart) {
       try {
-        const parsedCart = JSON.parse(savedCart);
-        console.log("Loading cart from localStorage:", parsedCart);
-        setItems(parsedCart);
+        parsedCart = JSON.parse(savedCart);
+        cartSource = "localStorage";
       } catch (error) {
-        console.error("Error parsing saved cart:", error);
+        console.error("Error parsing cart from localStorage:", error);
         localStorage.removeItem("cart");
       }
     }
+
+    // If localStorage failed or was empty, try sessionStorage
+    if ((!parsedCart || parsedCart.length === 0) && tempCart) {
+      try {
+        parsedCart = JSON.parse(tempCart);
+        cartSource = "sessionStorage";
+        // Restore to localStorage
+        localStorage.setItem("cart", tempCart);
+        // Clear sessionStorage after restoring
+        sessionStorage.removeItem("tempCart");
+      } catch (error) {
+        console.error("Error parsing cart from sessionStorage:", error);
+        sessionStorage.removeItem("tempCart");
+      }
+    }
+
+    if (parsedCart && Array.isArray(parsedCart) && parsedCart.length > 0) {
+      console.log(`Loading cart from ${cartSource}:`, parsedCart);
+      setItems(parsedCart);
+    }
+
+    setIsInitialized(true);
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(items));
-  }, [items]);
+    if (isInitialized) {
+      localStorage.setItem("cart", JSON.stringify(items));
+      console.log("Saving cart to localStorage:", items);
+    }
+  }, [items, isInitialized]);
 
   const addItem = (newItem: Omit<CartItem, "quantity">) => {
     setItems((currentItems) => {
@@ -134,3 +173,9 @@ export const CartProvider = ({
     </CartContext.Provider>
   );
 };
+
+// Export as default for Fast Refresh compatibility
+export default CartProvider;
+
+// Also export as named export for existing imports
+export { CartProvider };

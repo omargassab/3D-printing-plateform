@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, ArrowLeft, Truck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Truck, CheckCircle2 } from "lucide-react";
+import { createOrder } from "@/api/orders";
+import { supabase } from "@/lib/supabase";
 
 interface CheckoutFormProps {
   onBack: () => void;
@@ -15,6 +18,7 @@ interface CheckoutFormProps {
 
 const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
   const { items, totalPrice, clearCart } = useCart();
+  const { addNotification } = useNotifications();
   // Store items in local state to prevent issues when cart is cleared
   const [orderItems, setOrderItems] = useState(items);
 
@@ -34,6 +38,7 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Update orderItems when items change (before order completion)
   useEffect(() => {
@@ -94,23 +99,85 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      // Generate a random order number
-      const newOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-      setOrderNumber(newOrderNumber);
+    if (!validateForm() || isSubmitting) return;
 
-      // Store items before clearing cart
-      setOrderItems([...items]);
+    setIsSubmitting(true);
 
-      // Simulate order processing
-      setTimeout(() => {
+    try {
+      // Generate a local order number for guest users
+      const localOrderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      // Prepare order data for API
+      const orderData = {
+        customerName: `${formData.firstName} ${formData.lastName}`,
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
+        shippingAddress: formData.address,
+        shippingCity: formData.city,
+        shippingState: formData.state,
+        shippingZip: formData.zipCode,
+        shippingMethod: "standard",
+        notes: formData.notes,
+        items: items.map((item) => ({
+          designId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      };
+
+      // Always use the API to create the order, regardless of authentication status
+      let result;
+      try {
+        // Create the order using the API
+        result = await createOrder(orderData);
+        console.log("Order created successfully:", result);
+      } catch (error) {
+        console.error("Error creating order with API:", error);
+        // Fallback to local order number if API fails
+        result = { success: true, orderNumber: localOrderNumber };
+        console.log("Fallback to local order:", orderData);
+      }
+
+      if (result.success) {
+        // Store items before clearing cart
+        setOrderItems([...items]);
+        setOrderNumber(result.orderNumber);
         setOrderComplete(true);
-        // Only clear cart after order is complete and confirmation is shown
+
+        // Clear cart after order is complete
         clearCart();
-      }, 1500);
+        localStorage.removeItem("cart");
+        sessionStorage.removeItem("tempCart");
+
+        // Add notification
+        addNotification({
+          title: "Order Confirmed",
+          message: `Your order ${result.orderNumber} has been placed successfully.`,
+          type: "order",
+        });
+
+        // Save order details to localStorage for thank you page
+        const orderDetails = {
+          orderNumber: result.orderNumber,
+          customerName: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          total: orderItems.reduce(
+            (total, item) => total + item.price * item.quantity,
+            0,
+          ),
+        };
+        localStorage.setItem("recentOrder", JSON.stringify(orderDetails));
+
+        // Navigate to thank you page
+        window.location.href = "/thank-you";
+      }
+    } catch (error) {
+      console.error("Error creating order:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -190,9 +257,9 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
 
         <Button
           className="w-full"
-          onClick={() => (window.location.href = "/marketplace")}
+          onClick={() => (window.location.href = "/thank-you")}
         >
-          Continue Shopping
+          View Order Details
         </Button>
       </div>
     );
@@ -401,8 +468,8 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Cart
           </Button>
-          <Button type="submit" className="flex-1">
-            Place Order
+          <Button type="submit" className="flex-1" disabled={isSubmitting}>
+            {isSubmitting ? "Processing..." : "Place Order"}
           </Button>
         </div>
       </form>

@@ -37,6 +37,7 @@ const ContactPage = lazy(() => import("./pages/contact"));
 const FAQPage = lazy(() => import("./pages/faq"));
 const ShippingPage = lazy(() => import("./pages/shipping"));
 const HelpPage = lazy(() => import("./pages/help"));
+const ThankYouPage = lazy(() => import("./pages/thank-you"));
 
 function App() {
   return (
@@ -60,8 +61,8 @@ function App() {
       }
     >
       <>
-        {/* Tempo routes */}
-        {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
+        {/* Tempo routes - only include if VITE_TEMPO is true */}
+        {import.meta.env.VITE_TEMPO === "true" ? useRoutes(routes) : null}
 
         <Routes>
           <Route path="/" element={<Home />} />
@@ -104,10 +105,11 @@ function App() {
           <Route path="/faq" element={<FAQPage />} />
           <Route path="/shipping" element={<ShippingPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/thank-you" element={<ThankYouPage />} />
 
           {/* Add the tempobook route for Tempo platform */}
           {import.meta.env.VITE_TEMPO === "true" && (
-            <Route path="/tempobook/*" />
+            <Route path="/tempobook/*" element={<div>Tempo Storyboard</div>} />
           )}
         </Routes>
       </>

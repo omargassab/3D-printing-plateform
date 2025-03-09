@@ -56,6 +56,8 @@ const SignUpForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent multiple submissions
+
     setError(null);
 
     // Validate passwords match
@@ -74,9 +76,12 @@ const SignUpForm = ({
 
     try {
       await onSignUp(formData);
-    } catch (err) {
-      setError("An error occurred during sign up. Please try again.");
-    } finally {
+      // The signup page will handle the redirect
+    } catch (err: any) {
+      console.error("Signup form error:", err);
+      setError(
+        err?.message || "An error occurred during sign up. Please try again.",
+      );
       setIsLoading(false);
     }
   };
@@ -108,6 +113,7 @@ const SignUpForm = ({
               value={formData.firstName}
               onChange={handleChange}
               required
+              disabled={isLoading}
             />
           </div>
           <div className="space-y-2">
@@ -119,6 +125,7 @@ const SignUpForm = ({
               value={formData.lastName}
               onChange={handleChange}
               required
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -133,6 +140,7 @@ const SignUpForm = ({
             value={formData.email}
             onChange={handleChange}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -143,6 +151,7 @@ const SignUpForm = ({
             onValueChange={(value: "customer" | "designer" | "dropshipper") =>
               handleAccountTypeChange(value)
             }
+            disabled={isLoading}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select account type" />
@@ -166,6 +175,7 @@ const SignUpForm = ({
             onChange={handleChange}
             required
             minLength={8}
+            disabled={isLoading}
           />
           <p className="text-xs text-muted-foreground">
             Must be at least 8 characters
@@ -181,6 +191,7 @@ const SignUpForm = ({
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -190,6 +201,7 @@ const SignUpForm = ({
             checked={agreeTerms}
             onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
             required
+            disabled={isLoading}
           />
           <Label htmlFor="terms" className="text-sm font-normal cursor-pointer">
             I agree to the{" "}
@@ -228,7 +240,12 @@ const SignUpForm = ({
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-6">
-          <Button variant="outline" type="button" className="w-full">
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+          >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -250,7 +267,12 @@ const SignUpForm = ({
             </svg>
             Google
           </Button>
-          <Button variant="outline" type="button" className="w-full">
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="currentColor"
@@ -271,6 +293,7 @@ const SignUpForm = ({
             className="p-0 font-normal"
             type="button"
             onClick={onLogin}
+            disabled={isLoading}
           >
             Sign in
           </Button>

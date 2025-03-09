@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 interface LoginFormProps {
-  onLogin?: (email: string, password: string) => Promise<void>;
+  onLogin?: (email: string, password: string) => Promise<boolean | void>;
   onForgotPassword?: () => void;
   onSignUp?: () => void;
 }
@@ -26,14 +26,22 @@ const LoginForm = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return; // Prevent multiple submissions
+
     setError(null);
     setIsLoading(true);
 
     try {
-      await onLogin(email, password);
-    } catch (err) {
-      setError("Invalid email or password. Please try again.");
-    } finally {
+      // Call the login function
+      const success = await onLogin(email, password);
+
+      // If login was not successful, reset loading state
+      if (success === false) {
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Login form error:", err);
+      setError(err?.message || "Invalid email or password. Please try again.");
       setIsLoading(false);
     }
   };
@@ -62,6 +70,7 @@ const LoginForm = ({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -74,6 +83,7 @@ const LoginForm = ({
               className="px-0 font-normal"
               type="button"
               onClick={onForgotPassword}
+              disabled={isLoading}
             >
               Forgot password?
             </Button>
@@ -85,6 +95,7 @@ const LoginForm = ({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -93,6 +104,7 @@ const LoginForm = ({
             id="remember"
             checked={rememberMe}
             onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+            disabled={isLoading}
           />
           <Label
             htmlFor="remember"
@@ -127,7 +139,12 @@ const LoginForm = ({
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-6">
-          <Button variant="outline" type="button" className="w-full">
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+          >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -149,7 +166,12 @@ const LoginForm = ({
             </svg>
             Google
           </Button>
-          <Button variant="outline" type="button" className="w-full">
+          <Button
+            variant="outline"
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+          >
             <svg
               className="mr-2 h-4 w-4"
               fill="currentColor"
@@ -170,6 +192,7 @@ const LoginForm = ({
             className="p-0 font-normal"
             type="button"
             onClick={onSignUp}
+            disabled={isLoading}
           >
             Sign up
           </Button>

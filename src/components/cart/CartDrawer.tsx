@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -26,6 +26,8 @@ const CartDrawer = ({ children }: CartDrawerProps) => {
     itemCount,
     totalPrice,
   } = useCart();
+
+  // Removed auto-reload effect to prevent refresh loops
 
   return (
     <Sheet>
@@ -163,7 +165,14 @@ const CartDrawer = ({ children }: CartDrawerProps) => {
               <Button
                 className="w-full"
                 size="lg"
-                onClick={() => (window.location.href = "/checkout")}
+                onClick={() => {
+                  // Store cart in sessionStorage before navigating to ensure it persists
+                  sessionStorage.setItem(
+                    "tempCart",
+                    localStorage.getItem("cart") || "[]",
+                  );
+                  window.location.href = "/checkout";
+                }}
               >
                 Proceed to Checkout
               </Button>

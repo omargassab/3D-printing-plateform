@@ -15,12 +15,19 @@ const SignUpPage = () => {
 
   const handleSignUp = async (data: SignUpData) => {
     try {
+      console.log("Sign up form submitted for:", data.email);
       setError(null);
+
+      // Register the user
       const result = await registerUser(data);
 
-      if (result.success) {
+      if (result && result.success) {
+        console.log("Sign up successful, updating auth context");
+
         // Update auth context
-        login(result.token, result.user);
+        login(result.session, result.user);
+
+        console.log("Redirecting based on account type:", data.accountType);
 
         // Redirect based on account type
         if (data.accountType === "designer") {
@@ -30,10 +37,12 @@ const SignUpPage = () => {
         } else {
           window.location.href = "/";
         }
+      } else {
+        setError("Failed to create account. Please try again.");
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during registration");
       console.error("Registration error:", err);
+      setError(err.message || "An error occurred during registration");
     }
   };
 

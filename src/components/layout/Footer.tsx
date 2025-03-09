@@ -30,34 +30,58 @@ const Footer = ({ className = "" }: FooterProps) => {
               or find the perfect custom item.
             </p>
             <div className="flex space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full hover:bg-gray-800"
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Facebook className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full hover:bg-gray-800"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-gray-800"
+                >
+                  <Facebook className="h-5 w-5" />
+                </Button>
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Instagram className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full hover:bg-gray-800"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-gray-800"
+                >
+                  <Instagram className="h-5 w-5" />
+                </Button>
+              </a>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Twitter className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full hover:bg-gray-800"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-gray-800"
+                >
+                  <Twitter className="h-5 w-5" />
+                </Button>
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <Youtube className="h-5 w-5" />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-gray-800"
+                >
+                  <Youtube className="h-5 w-5" />
+                </Button>
+              </a>
             </div>
           </div>
 
