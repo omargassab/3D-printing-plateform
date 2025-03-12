@@ -1,178 +1,112 @@
 import { supabase } from "@/lib/supabase";
 
-export interface DesignData {
+export interface DesignUploadData {
   title: string;
   description: string;
-  price: number;
   category: string;
+  price: number;
   materials: string[];
+  fileUrl?: string; // Will be populated after file upload
+  thumbnailUrl?: string; // Will be populated after thumbnail upload
+  additionalImages?: string[]; // Will be populated after additional images upload
 }
 
-export async function getDesigns(filters?: {
-  category?: string[];
-  priceRange?: [number, number];
-  designers?: string[];
-  materials?: string[];
-  searchQuery?: string;
-  sortBy?: string;
-}) {
+export async function uploadDesignFile(file: File) {
   try {
-    let query = supabase
+    // Check if bucket exists and create it if needed
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const designsBucketExists = buckets?.some(
+        (bucket) => bucket.name === "designs",
+      );
+
+      if (!designsBucketExists) {
+        console.log("Creating designs bucket");
+        await supabase.storage.createBucket("designs", { public: true });
+      }
+    } catch (err) {
+      console.error("Error checking/creating bucket:", err);
+    }
+
+    // Create folder path if it doesn't exist
+    const folderPath = "design_files";
+
+    // Generate unique filename
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `${folderPath}/${fileName}`;
+
+    const { data, error } = await supabase.storage
       .from("designs")
-      .select(
-        `
-        *,
-        users!designs_designer_id_fkey(first_name, last_name),
-        design_images(*),
-        design_materials(*)
-      `,
-      )
-      .eq("is_active", true);
+      .upload(filePath, file);
 
-    // Apply filters
-    if (filters) {
-      // Category filter
-      if (filters.category && filters.category.length > 0) {
-        query = query.in("category", filters.category);
-      }
-
-      // Price range filter
-      if (filters.priceRange) {
-        query = query
-          .gte("price", filters.priceRange[0])
-          .lte("price", filters.priceRange[1]);
-      }
-
-      // Designer filter
-      if (filters.designers && filters.designers.length > 0) {
-        query = query.in("designer_id", filters.designers);
-      }
-
-      // Materials filter
-      if (filters.materials && filters.materials.length > 0) {
-        query = query.or(
-          filters.materials
-            .map((material) => `design_materials.material.eq.${material}`)
-            .join(","),
-        );
-      }
-
-      // Search query
-      if (filters.searchQuery) {
-        query = query.or(
-          `title.ilike.%${filters.searchQuery}%,description.ilike.%${filters.searchQuery}%`,
-        );
-      }
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
     }
 
-    const { data, error } = await query;
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("designs")
+      .getPublicUrl(filePath);
 
-    if (error) throw error;
-
-    // Transform the data to match the expected format
-    const formattedDesigns = data.map((design) => {
-      const primaryImage = design.design_images.find(
-        (img: any) => img.is_primary,
-      ) ||
-        design.design_images[0] || {
-          image_url: "https://via.placeholder.com/300",
-        };
-
-      const materials = design.design_materials.map((m: any) => m.material);
-
-      return {
-        id: design.id,
-        title: design.title,
-        designerName: `${design.users.first_name} ${design.users.last_name}`,
-        price: design.price,
-        imageUrl: primaryImage.image_url,
-        category: design.category,
-        isNew:
-          new Date(design.created_at).getTime() >
-          Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days
-        rating: design.rating || 4.5, // Default rating
-        materials: materials,
-        description: design.description,
-      };
-    });
-
-    // Apply sorting
-    if (filters?.sortBy) {
-      switch (filters.sortBy) {
-        case "price-low":
-          formattedDesigns.sort((a, b) => a.price - b.price);
-          break;
-        case "price-high":
-          formattedDesigns.sort((a, b) => b.price - a.price);
-          break;
-        case "newest":
-          formattedDesigns.sort((a, b) => (a.isNew ? -1 : b.isNew ? 1 : 0));
-          break;
-        case "rating":
-          formattedDesigns.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-          break;
-        // 'featured' is default, no sorting needed
-      }
-    }
-
-    return { designs: formattedDesigns };
+    return { success: true, fileUrl: urlData.publicUrl };
   } catch (error) {
-    console.error("Error fetching designs:", error);
+    console.error("Error uploading design file:", error);
     throw error;
   }
 }
 
-export async function getDesignById(id: string) {
-  try {
-    const { data, error } = await supabase
-      .from("designs")
-      .select(
-        `
-        *,
-        users!designs_designer_id_fkey(id, first_name, last_name, email, avatar_url),
-        design_images(*),
-        design_materials(*)
-      `,
-      )
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    if (!data) throw new Error("Design not found");
-
-    const images = data.design_images.map((img: any) => img.image_url);
-    const materials = data.design_materials.map((m: any) => m.material);
-
-    return {
-      id: data.id,
-      title: data.title,
-      description: data.description,
-      price: data.price,
-      category: data.category,
-      designer: {
-        id: data.users.id,
-        name: `${data.users.first_name} ${data.users.last_name}`,
-        email: data.users.email,
-        avatar: data.users.avatar_url,
-      },
-      images: images,
-      materials: materials,
-      isActive: data.is_active,
-      isFeatured: data.is_featured,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-    };
-  } catch (error) {
-    console.error("Error fetching design:", error);
-    throw error;
-  }
-}
-
-export async function createDesign(
-  designData: DesignData,
-  files: File[],
-  images: File[],
+export async function uploadDesignImage(
+  file: File,
+  isPrimary: boolean = false,
 ) {
+  try {
+    // Check if bucket exists and create it if needed
+    try {
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const designsBucketExists = buckets?.some(
+        (bucket) => bucket.name === "designs",
+      );
+
+      if (!designsBucketExists) {
+        console.log("Creating designs bucket");
+        await supabase.storage.createBucket("designs", { public: true });
+      }
+    } catch (err) {
+      console.error("Error checking/creating bucket:", err);
+    }
+
+    // Create folder path if it doesn't exist
+    const folderPath = "design_images";
+
+    // Generate unique filename
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+    const filePath = `${folderPath}/${fileName}`;
+
+    const { data, error } = await supabase.storage
+      .from("designs")
+      .upload(filePath, file);
+
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("designs")
+      .getPublicUrl(filePath);
+
+    return { success: true, imageUrl: urlData.publicUrl };
+  } catch (error) {
+    console.error("Error uploading design image:", error);
+    throw error;
+  }
+}
+
+export async function createDesign(designData: DesignUploadData) {
   try {
     // Get current user
     const {
@@ -182,84 +116,229 @@ export async function createDesign(
     if (sessionError) throw sessionError;
     if (!session) throw new Error("Not authenticated");
 
-    // Insert design
+    console.log("Creating design with user ID:", session.user.id);
+
+    // Insert design with explicit designer_id
     const { data: design, error: designError } = await supabase
       .from("designs")
       .insert({
         title: designData.title,
         description: designData.description,
-        designer_id: session.user.id,
-        price: designData.price,
         category: designData.category,
+        price: designData.price,
+        materials: designData.materials,
+        file_url: designData.fileUrl,
+        designer_id: session.user.id,
+        status: "active",
       })
       .select()
       .single();
 
-    if (designError) throw designError;
-
-    // Upload files
-    for (const file of files) {
-      const filePath = `designs/${design.id}/${file.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("design-files")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Insert file record
-      const { error: fileRecordError } = await supabase
-        .from("design_files")
-        .insert({
-          design_id: design.id,
-          file_path: filePath,
-          file_type: file.type,
-          is_primary: files.indexOf(file) === 0, // First file is primary
-        });
-
-      if (fileRecordError) throw fileRecordError;
+    if (designError) {
+      console.error("Design insert error:", designError);
+      throw designError;
     }
 
-    // Upload images
-    for (const image of images) {
-      const imagePath = `designs/${design.id}/${image.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("design-images")
-        .upload(imagePath, image);
+    console.log("Design created successfully:", design.id);
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("design-images")
-        .getPublicUrl(imagePath);
-
-      // Insert image record
-      const { error: imageRecordError } = await supabase
+    // Insert primary image
+    if (designData.thumbnailUrl) {
+      const { error: imageError } = await supabase
         .from("design_images")
         .insert({
           design_id: design.id,
-          image_url: publicUrlData.publicUrl,
-          is_primary: images.indexOf(image) === 0, // First image is primary
+          image_url: designData.thumbnailUrl,
+          is_primary: true,
         });
 
-      if (imageRecordError) throw imageRecordError;
+      if (imageError) {
+        console.error("Primary image insert error:", imageError);
+        throw imageError;
+      }
     }
 
-    // Insert materials
-    for (const material of designData.materials) {
-      const { error: materialError } = await supabase
-        .from("design_materials")
-        .insert({
-          design_id: design.id,
-          material: material,
-        });
+    // Insert additional images
+    if (designData.additionalImages && designData.additionalImages.length > 0) {
+      const imageInserts = designData.additionalImages.map((imageUrl) => ({
+        design_id: design.id,
+        image_url: imageUrl,
+        is_primary: false,
+      }));
 
-      if (materialError) throw materialError;
+      const { error: imagesError } = await supabase
+        .from("design_images")
+        .insert(imageInserts);
+
+      if (imagesError) {
+        console.error("Additional images insert error:", imagesError);
+        throw imagesError;
+      }
     }
 
     return { success: true, designId: design.id };
   } catch (error) {
     console.error("Error creating design:", error);
+    throw error;
+  }
+}
+
+export async function getDesigns(
+  options: {
+    category?: string;
+    priceRange?: [number, number];
+    designerId?: string;
+    searchQuery?: string;
+    sortBy?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+) {
+  try {
+    let query = supabase
+      .from("designs")
+      .select(
+        `
+        *,
+        design_images(*),
+        users!designs_designer_id_fkey(first_name, last_name)
+      `,
+      )
+      .eq("status", "active");
+
+    // Apply filters
+    if (options.category) {
+      query = query.eq("category", options.category);
+    }
+
+    if (options.priceRange) {
+      query = query
+        .gte("price", options.priceRange[0])
+        .lte("price", options.priceRange[1]);
+    }
+
+    if (options.designerId) {
+      query = query.eq("designer_id", options.designerId);
+    }
+
+    if (options.searchQuery) {
+      query = query.or(
+        `title.ilike.%${options.searchQuery}%,description.ilike.%${options.searchQuery}%`,
+      );
+    }
+
+    // Apply sorting
+    if (options.sortBy) {
+      switch (options.sortBy) {
+        case "price-low":
+          query = query.order("price", { ascending: true });
+          break;
+        case "price-high":
+          query = query.order("price", { ascending: false });
+          break;
+        case "newest":
+          query = query.order("created_at", { ascending: false });
+          break;
+        case "rating":
+          query = query.order("average_rating", { ascending: false });
+          break;
+        default:
+          query = query.order("created_at", { ascending: false });
+      }
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    // Apply pagination
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options.offset) {
+      query = query.range(
+        options.offset,
+        options.offset + (options.limit || 20) - 1,
+      );
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    // Format the data
+    const formattedDesigns = data.map((design) => {
+      const primaryImage = design.design_images.find((img) => img.is_primary) ||
+        design.design_images[0] || {
+          image_url: "https://via.placeholder.com/300",
+        };
+
+      return {
+        id: design.id,
+        title: design.title,
+        description: design.description,
+        price: design.price,
+        category: design.category,
+        materials: design.materials,
+        thumbnailUrl: primaryImage.image_url,
+        designerName: `${design.users.first_name} ${design.users.last_name}`,
+        designerId: design.designer_id,
+        createdAt: design.created_at,
+        rating: design.average_rating || 0,
+        salesCount: design.sales_count || 0,
+      };
+    });
+
+    return { designs: formattedDesigns, count };
+  } catch (error) {
+    console.error("Error fetching designs:", error);
+    throw error;
+  }
+}
+
+export async function getDesignDetails(designId: string) {
+  try {
+    // Get design with images
+    const { data, error } = await supabase
+      .from("designs")
+      .select(
+        `
+        *,
+        design_images(*),
+        users!designs_designer_id_fkey(first_name, last_name)
+      `,
+      )
+      .eq("id", designId)
+      .single();
+
+    if (error) throw error;
+
+    // Format the data
+    const primaryImage = data.design_images.find((img) => img.is_primary) ||
+      data.design_images[0] || { image_url: "https://via.placeholder.com/300" };
+
+    const additionalImages = data.design_images
+      .filter((img) => !img.is_primary)
+      .map((img) => img.image_url);
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      category: data.category,
+      materials: data.materials,
+      status: data.status,
+      createdAt: data.created_at,
+      fileUrl: data.file_url,
+      thumbnailUrl: primaryImage.image_url,
+      additionalImages,
+      designerName: `${data.users.first_name} ${data.users.last_name}`,
+      designerId: data.designer_id,
+      salesCount: data.sales_count || 0,
+      viewCount: data.view_count || 0,
+      rating: data.average_rating || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching design details:", error);
     throw error;
   }
 }
@@ -274,24 +353,23 @@ export async function getDesignerDesigns() {
     if (sessionError) throw sessionError;
     if (!session) throw new Error("Not authenticated");
 
+    // Get designs with their images
     const { data, error } = await supabase
       .from("designs")
       .select(
         `
         *,
-        design_images(*),
-        order_items(count)
+        design_images(*)
       `,
       )
-      .eq("designer_id", session.user.id);
+      .eq("designer_id", session.user.id)
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
 
-    // Transform the data
+    // Format the data
     const formattedDesigns = data.map((design) => {
-      const primaryImage = design.design_images.find(
-        (img: any) => img.is_primary,
-      ) ||
+      const primaryImage = design.design_images.find((img) => img.is_primary) ||
         design.design_images[0] || {
           image_url: "https://via.placeholder.com/300",
         };
@@ -299,19 +377,57 @@ export async function getDesignerDesigns() {
       return {
         id: design.id,
         title: design.title,
+        description: design.description,
         price: design.price,
-        imageUrl: primaryImage.image_url,
         category: design.category,
-        isActive: design.is_active,
-        isFeatured: design.is_featured,
-        sales: design.order_items[0]?.count || 0,
+        materials: design.materials,
+        status: design.status,
         createdAt: design.created_at,
+        thumbnailUrl: primaryImage.image_url,
+        salesCount: design.sales_count || 0,
+        viewCount: design.view_count || 0,
       };
     });
 
     return { designs: formattedDesigns };
   } catch (error) {
     console.error("Error fetching designer designs:", error);
+    throw error;
+  }
+}
+
+export async function deleteDesign(designId: string) {
+  try {
+    // Get current user
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!session) throw new Error("Not authenticated");
+
+    // Verify ownership
+    const { data: designCheck, error: checkError } = await supabase
+      .from("designs")
+      .select("designer_id")
+      .eq("id", designId)
+      .single();
+
+    if (checkError) throw checkError;
+    if (designCheck.designer_id !== session.user.id)
+      throw new Error("Unauthorized");
+
+    // Delete design (images will be deleted via cascade)
+    const { error: deleteError } = await supabase
+      .from("designs")
+      .delete()
+      .eq("id", designId);
+
+    if (deleteError) throw deleteError;
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting design:", error);
     throw error;
   }
 }

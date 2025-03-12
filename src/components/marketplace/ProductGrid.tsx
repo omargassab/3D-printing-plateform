@@ -56,7 +56,7 @@ const ProductGrid = ({
   const [searchQuery, setSearchQuery] = useState<string>(urlSearchQuery);
   const productsPerPage = 8;
 
-  // Only initialize products once when they first load
+  // Initialize products and apply search if URL has search parameter
   useEffect(() => {
     if (products.length > 0) {
       console.log(
@@ -70,7 +70,7 @@ const ProductGrid = ({
         handleSearch(urlSearchQuery);
       }
     }
-  }, []); // Empty dependency array to run only once
+  }, [products, urlSearchQuery]); // Update when products or URL search query changes
 
   // Initialize with mock products if none provided
   useEffect(() => {
@@ -85,8 +85,8 @@ const ProductGrid = ({
         {
           id: "1",
           title: "Geometric Vase Design",
-          designerName: "Alex Smith",
-          price: 29.99,
+          designerName: "Youssef Ben Ali",
+          price: 89.99,
           imageUrl:
             "https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?w=500&q=80",
           category: "home-decor",
@@ -96,8 +96,8 @@ const ProductGrid = ({
         {
           id: "2",
           title: "Miniature Chess Set",
-          designerName: "Maria Jones",
-          price: 49.99,
+          designerName: "Leila Mansour",
+          price: 149.99,
           imageUrl:
             "https://images.unsplash.com/photo-1586165368502-1bad197a6461?w=500&q=80",
           category: "toys",
@@ -106,8 +106,8 @@ const ProductGrid = ({
         {
           id: "3",
           title: "Smartphone Stand",
-          designerName: "David Chen",
-          price: 19.99,
+          designerName: "Mohamed Trabelsi",
+          price: 59.99,
           imageUrl:
             "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&q=80",
           category: "gadgets",
@@ -117,8 +117,8 @@ const ProductGrid = ({
         {
           id: "4",
           title: "Geometric Earrings",
-          designerName: "Sarah Patel",
-          price: 34.99,
+          designerName: "Amira Belhaj",
+          price: 104.99,
           imageUrl:
             "https://images.unsplash.com/photo-1630019852942-f89202989a59?w=500&q=80",
           category: "jewelry",
@@ -127,8 +127,8 @@ const ProductGrid = ({
         {
           id: "5",
           title: "Desktop Planter",
-          designerName: "James Wilson",
-          price: 24.99,
+          designerName: "Mehdi Khelifi",
+          price: 74.99,
           imageUrl:
             "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=500&q=80",
           category: "home-decor",
@@ -137,8 +137,8 @@ const ProductGrid = ({
         {
           id: "6",
           title: "Articulated Dragon",
-          designerName: "Alex Smith",
-          price: 39.99,
+          designerName: "Youssef Ben Ali",
+          price: 119.99,
           imageUrl:
             "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=500&q=80",
           category: "figurines",
@@ -147,8 +147,8 @@ const ProductGrid = ({
         {
           id: "7",
           title: "Cable Organizer",
-          designerName: "David Chen",
-          price: 14.99,
+          designerName: "Nizar Chaabane",
+          price: 44.99,
           imageUrl:
             "https://images.unsplash.com/photo-1572314493295-09c6d5ec3cdf?w=500&q=80",
           category: "gadgets",
@@ -157,8 +157,8 @@ const ProductGrid = ({
         {
           id: "8",
           title: "Minimalist Bracelet",
-          designerName: "Sarah Patel",
-          price: 29.99,
+          designerName: "Amira Belhaj",
+          price: 89.99,
           imageUrl:
             "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=500&q=80",
           category: "jewelry",
@@ -224,6 +224,8 @@ const ProductGrid = ({
 
   // Function to handle search queries
   const handleSearch = (query: string) => {
+    console.log("Searching for:", query);
+
     if (!query.trim()) {
       // If search is empty, reset to filtered products based on current filters
       handleFilterChange({
@@ -243,6 +245,8 @@ const ProductGrid = ({
         product.category.toLowerCase().includes(searchLower)
       );
     });
+
+    console.log(`Found ${searchResults.length} results for "${query}"`);
 
     // Apply current sort to search results
     const sortedResults = sortProducts(searchResults, sortOption);
@@ -516,7 +520,7 @@ const ProductGrid = ({
                                 </div>
                                 <div className="flex justify-between items-center mt-4">
                                   <span className="font-bold text-lg">
-                                    ${product.price.toFixed(2)}
+                                    {product.price.toFixed(2)} TND
                                   </span>
                                   <div className="space-x-2">
                                     <Button

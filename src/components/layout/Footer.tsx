@@ -2,6 +2,8 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import TopDesigners from "./TopDesigners";
+import ContactInfo from "./ContactInfo";
 import {
   Facebook,
   Instagram,
@@ -19,15 +21,15 @@ const Footer = ({ className = "" }: FooterProps) => {
   return (
     <footer className={`bg-gray-900 text-white ${className}`}>
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
             <div className="text-2xl font-bold flex items-center">
-              <span className="text-3xl mr-1">🖨️</span> 3D Print Market
+              <span className="text-3xl mr-1">🖨️</span> 3D Print Tunisia
             </div>
             <p className="text-gray-400 max-w-xs">
-              Connect with talented designers, sell unique 3D printed products,
-              or find the perfect custom item.
+              Connect with talented Tunisian designers, sell unique 3D printed
+              products, or find the perfect custom item made in Tunisia.
             </p>
             <div className="flex space-x-4">
               <a
@@ -107,7 +109,7 @@ const Footer = ({ className = "" }: FooterProps) => {
                   className="text-gray-400 hover:text-white transition-colors"
                   onClick={(e) => {
                     e.preventDefault();
-                    window.location.href = "/designer/dashboard";
+                    window.location.href = "/designers";
                   }}
                 >
                   Designers
@@ -150,6 +152,11 @@ const Footer = ({ className = "" }: FooterProps) => {
                 </a>
               </li>
             </ul>
+          </div>
+
+          {/* Top Designers */}
+          <div>
+            <TopDesigners />
           </div>
 
           {/* Support */}
@@ -219,30 +226,15 @@ const Footer = ({ className = "" }: FooterProps) => {
             </ul>
           </div>
 
-          {/* Newsletter */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Stay Updated</h3>
-            <p className="text-gray-400 mb-4">
-              Subscribe to our newsletter for the latest designs and offers.
-            </p>
-            <div className="flex">
-              <Input
-                type="email"
-                placeholder="Your email"
-                className="bg-gray-800 border-gray-700 text-white rounded-l-md rounded-r-none focus:ring-primary"
-              />
-              <Button className="rounded-l-none">
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          {/* Contact Info */}
+          <ContactInfo />
         </div>
 
         <Separator className="my-8 bg-gray-800" />
 
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
-            © {new Date().getFullYear()} 3D Print Market. All rights reserved.
+            © {new Date().getFullYear()} 3D Print Tunisia. All rights reserved.
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <a

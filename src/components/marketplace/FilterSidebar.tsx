@@ -10,6 +10,9 @@ import {
 import { Separator } from "../ui/separator";
 import { Button } from "../ui/button";
 import { Search, X } from "lucide-react";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
+import { cn } from "@/lib/utils";
 
 interface FilterSidebarProps {
   onFilterChange?: (filters: FilterOptions) => void;
@@ -24,7 +27,7 @@ interface FilterOptions {
 }
 
 const FilterSidebar = ({
-  onFilterChange,
+  onFilterChange = () => {},
   className = "",
 }: FilterSidebarProps) => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -39,14 +42,18 @@ const FilterSidebar = ({
     { id: "gadgets", label: "Gadgets" },
     { id: "jewelry", label: "Jewelry" },
     { id: "toys", label: "Toys" },
+    { id: "mechanical", label: "Mechanical Parts" },
   ];
 
   const designers = [
-    { id: "alex-smith", label: "Alex Smith" },
-    { id: "maria-jones", label: "Maria Jones" },
-    { id: "david-chen", label: "David Chen" },
-    { id: "sarah-patel", label: "Sarah Patel" },
-    { id: "james-wilson", label: "James Wilson" },
+    { id: "youssef-ben-ali", label: "Youssef Ben Ali" },
+    { id: "leila-mansour", label: "Leila Mansour" },
+    { id: "mohamed-trabelsi", label: "Mohamed Trabelsi" },
+    { id: "amira-belhaj", label: "Amira Belhaj" },
+    { id: "mehdi-khelifi", label: "Mehdi Khelifi" },
+    { id: "sarra-bouazizi", label: "Sarra Bouazizi" },
+    { id: "nizar-chaabane", label: "Nizar Chaabane" },
+    { id: "ines-mejri", label: "Ines Mejri" },
   ];
 
   const materials = [
@@ -55,6 +62,7 @@ const FilterSidebar = ({
     { id: "petg", label: "PETG" },
     { id: "resin", label: "Resin" },
     { id: "nylon", label: "Nylon" },
+    { id: "tpu", label: "TPU Flexible" },
   ];
 
   // We'll skip the automatic initialization and let the user apply filters manually
@@ -107,7 +115,7 @@ const FilterSidebar = ({
     setSelectedMaterials([]);
 
     // Update parent component with cleared filters
-    onFilterChange?.({
+    onFilterChange({
       categories: [],
       priceRange: [0, 1000],
       designers: [],
@@ -127,7 +135,7 @@ const FilterSidebar = ({
     };
 
     // Apply filters with the copied state
-    onFilterChange?.(filterOptions);
+    onFilterChange(filterOptions);
   };
 
   const filteredCategories = categories.filter((category) =>
@@ -144,7 +152,9 @@ const FilterSidebar = ({
 
   return (
     <div
-      className={`bg-white w-full max-w-[300px] h-full p-4 border-r ${className}`}
+      className={cn(
+        `bg-white w-full max-w-[300px] h-full p-4 border-r ${className}`,
+      )}
     >
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Filters</h2>

@@ -2,10 +2,12 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./styles/rtl.css";
 import { BrowserRouter } from "react-router-dom";
 import AuthProvider from "./context/AuthContext";
 import CartProvider from "./context/CartContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { LanguageProvider } from "./lib/i18n";
 
 import { TempoDevtools } from "tempo-devtools";
 TempoDevtools.init();
@@ -31,13 +33,15 @@ const basename = import.meta.env.BASE_URL;
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter basename={basename}>
-      <AuthProvider>
-        <CartProvider>
-          <NotificationProvider>
-            <App />
-          </NotificationProvider>
-        </CartProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
+          </CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </React.StrictMode>,
 );

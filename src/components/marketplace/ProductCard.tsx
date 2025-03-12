@@ -107,7 +107,7 @@ const ProductCard = ({
         </CardContent>
 
         <CardFooter className="p-4 pt-0 flex justify-between items-center">
-          <div className="font-semibold">${price.toFixed(2)}</div>
+          <div className="font-semibold">{price.toFixed(2)} TND</div>
           <div className="flex gap-2">
             <Button
               variant="outline"

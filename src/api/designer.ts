@@ -24,7 +24,7 @@ export async function getDesignerDashboardStats() {
         .from("designs")
         .select("id", { count: "exact" })
         .eq("designer_id", session.user.id)
-        .eq("is_active", true);
+        .eq("status", "active");
 
     if (activeDesignsError) throw activeDesignsError;
 
@@ -39,14 +39,12 @@ export async function getDesignerDashboardStats() {
 
     if (orderItemsError) throw orderItemsError;
 
-    const totalSales = orderItemsData.reduce(
-      (sum, item) => sum + item.quantity,
-      0,
-    );
-    const totalRevenue = orderItemsData.reduce(
-      (sum, item) => sum + item.designer_royalty,
-      0,
-    );
+    const totalSales = orderItemsData
+      ? orderItemsData.reduce((sum, item) => sum + item.quantity, 0)
+      : 0;
+    const totalRevenue = orderItemsData
+      ? orderItemsData.reduce((sum, item) => sum + item.designer_royalty, 0)
+      : 0;
 
     // Get recent designs
     const { data: recentDesignsData, error: recentDesignsError } =

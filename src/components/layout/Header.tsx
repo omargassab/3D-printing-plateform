@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import CartDrawer from "../cart/CartDrawer";
@@ -60,6 +62,7 @@ const Header = ({
   onMenuToggle = () => {},
 }: HeaderProps) => {
   const { user: authUser, isAuthenticated, logout } = useAuth();
+  const { t, dir } = useTranslation();
 
   // Use provided user prop if available, otherwise use auth context user or default guest
   const user = propUser || authUser || null;
@@ -69,9 +72,12 @@ const Header = ({
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
-    // Redirect to marketplace with search query
-    window.location.href = `/marketplace?search=${encodeURIComponent(searchQuery)}`;
+    if (searchQuery.trim()) {
+      console.log("Search submitted:", searchQuery);
+      onSearch(searchQuery);
+      // Redirect to marketplace with search query
+      window.location.href = `/marketplace?search=${encodeURIComponent(searchQuery)}`;
+    }
   };
 
   const toggleMobileMenu = () => {
@@ -85,6 +91,7 @@ const Header = ({
         "sticky top-0 z-50 w-full bg-white border-b border-gray-200 shadow-sm",
         className,
       )}
+      dir={dir()}
     >
       <div className="container mx-auto px-4 h-20 flex items-center justify-between">
         {/* Logo */}
@@ -99,7 +106,15 @@ const Header = ({
           </Button>
           <a href="/" className="flex items-center">
             <div className="text-2xl font-bold text-primary flex items-center">
-              <span className="text-3xl mr-1">🖨️</span> 3D Print Market
+              <span className="text-3xl mr-1">🖨️</span>{" "}
+              <span className="flex items-center">
+                3D Print Tunisia{" "}
+                <img
+                  src="https://flagcdn.com/w20/tn.png"
+                  alt="Tunisia Flag"
+                  className="ml-2 h-4"
+                />
+              </span>
             </div>
           </a>
         </div>
@@ -113,13 +128,15 @@ const Header = ({
                   href="/marketplace"
                   className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100 hover:text-primary focus:bg-gray-100 focus:text-primary focus:outline-none disabled:pointer-events-none disabled:opacity-50"
                 >
-                  Marketplace
+                  {t("common.marketplace")}
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
               {user?.role === "designer" && (
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>Designer Portal</NavigationMenuTrigger>
+                  <NavigationMenuTrigger>
+                    {t("header.designerPortal")}
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[200px] gap-3 p-4">
                       <li>
@@ -165,7 +182,7 @@ const Header = ({
               {user?.role === "dropshipper" && (
                 <NavigationMenuItem>
                   <NavigationMenuTrigger>
-                    Dropshipper Portal
+                    {t("header.dropshipperPortal")}
                   </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[220px] gap-3 p-4">
@@ -209,7 +226,9 @@ const Header = ({
 
               {user?.role === "admin" && (
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>Admin</NavigationMenuTrigger>
+                  <NavigationMenuTrigger>
+                    {t("header.adminPortal")}
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent>
                     <ul className="grid w-[200px] gap-3 p-4">
                       <li>
@@ -262,7 +281,7 @@ const Header = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="search"
-              placeholder="Search for 3D designs..."
+              placeholder={t("common.search")}
               className="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:border-primary"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -278,13 +297,16 @@ const Header = ({
           {/* Notifications */}
           <NotificationDropdown />
 
+          {/* Language Switcher */}
+          <LanguageSwitcher />
+
           {/* User Menu */}
           {isGuest ? (
             <Button
               variant="outline"
               onClick={() => (window.location.href = "/login")}
             >
-              Sign In
+              {t("common.signIn")}
             </Button>
           ) : (
             <DropdownMenu>

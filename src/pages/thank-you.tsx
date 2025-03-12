@@ -71,7 +71,7 @@ const ThankYouPage = () => {
                   <div>
                     <p className="text-sm text-gray-500">Total Amount</p>
                     <p className="font-medium">
-                      ${orderDetails.total.toFixed(2)}
+                      {orderDetails.total.toFixed(2)} TND
                     </p>
                   </div>
                 </div>

@@ -211,20 +211,20 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
                 <span>
                   {item.quantity} × {item.title}
                 </span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                <span>{(item.price * item.quantity).toFixed(2)} TND</span>
               </div>
             ))}
             <Separator className="my-2" />
             <div className="flex justify-between font-bold">
               <span>Total</span>
               <span>
-                $
                 {orderItems
                   .reduce(
                     (total, item) => total + item.price * item.quantity,
                     0,
                   )
-                  .toFixed(2)}
+                  .toFixed(2)}{" "}
+                TND
               </span>
             </div>
           </div>
@@ -283,13 +283,13 @@ const CheckoutForm = ({ onBack }: CheckoutFormProps) => {
                 <span>
                   {item.quantity} × {item.title}
                 </span>
-                <span>${(item.price * item.quantity).toFixed(2)}</span>
+                <span>{(item.price * item.quantity).toFixed(2)} TND</span>
               </div>
             ))}
             <Separator className="my-2" />
             <div className="flex justify-between font-bold">
               <span>Total</span>
-              <span>${totalPrice.toFixed(2)}</span>
+              <span>{totalPrice.toFixed(2)} TND</span>
             </div>
           </div>
         </div>

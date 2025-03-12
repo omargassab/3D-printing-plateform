@@ -42,6 +42,7 @@ const LoginPage = () => {
 
         // Determine redirect destination
         let destination = "/";
+        console.log("User role for redirect:", result.user.role);
         if (result.user.role === "designer") {
           destination = "/designer/dashboard";
         } else if (result.user.role === "dropshipper") {

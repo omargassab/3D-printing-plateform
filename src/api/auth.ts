@@ -105,16 +105,22 @@ export async function loginUser(email: string, password: string) {
     if (userError) {
       console.log("User profile not found, creating from auth metadata");
       const metadata = data.user.user_metadata;
+      const appMetadata = data.user.app_metadata;
+
+      // Determine account type from metadata or app_metadata
+      const accountType =
+        metadata?.account_type || appMetadata?.account_type || "customer";
+      console.log("Account type from metadata:", accountType);
 
       // Create user profile
       const { data: newUserData, error: insertError } = await supabase
         .from("users")
         .insert({
           id: data.user.id,
-          first_name: metadata?.first_name || "",
-          last_name: metadata?.last_name || "",
+          first_name: metadata?.first_name || "Admin",
+          last_name: metadata?.last_name || "User",
           email: data.user.email || "",
-          account_type: metadata?.account_type || "customer",
+          account_type: accountType,
         })
         .select()
         .single();
@@ -122,16 +128,21 @@ export async function loginUser(email: string, password: string) {
       if (insertError) {
         console.error("Error creating user profile:", insertError);
         // Fall back to auth data
+        const metadata = data.user.user_metadata;
+        const appMetadata = data.user.app_metadata;
+        const accountType =
+          metadata?.account_type || appMetadata?.account_type || "customer";
+
         return {
           success: true,
           user: {
             id: data.user.id,
             name:
-              `${metadata?.first_name || ""} ${metadata?.last_name || ""}`.trim() ||
+              `${metadata?.first_name || "Admin"} ${metadata?.last_name || "User"}`.trim() ||
               data.user.email?.split("@")[0] ||
               "User",
             email: data.user.email || "",
-            role: metadata?.account_type || "customer",
+            role: accountType,
           },
           session: data.session,
         };

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { useRoutes, Routes, Route } from "react-router-dom";
 import Home from "./components/home";
 import routes from "tempo-routes";
@@ -24,6 +24,9 @@ const DropshipperProductsPage = lazy(
 const AdminDashboardPage = lazy(() => import("./pages/admin/dashboard"));
 const AdminOrdersPage = lazy(() => import("./pages/admin/orders"));
 const AdminUsersPage = lazy(() => import("./pages/admin/users"));
+const CreateAdminAccountPage = lazy(
+  () => import("./pages/admin/create-account"),
+);
 const CheckoutPage = lazy(() => import("./pages/checkout"));
 
 // New pages
@@ -38,8 +41,40 @@ const FAQPage = lazy(() => import("./pages/faq"));
 const ShippingPage = lazy(() => import("./pages/shipping"));
 const HelpPage = lazy(() => import("./pages/help"));
 const ThankYouPage = lazy(() => import("./pages/thank-you"));
+const DesignersPage = lazy(() => import("./pages/designers"));
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate checking if all resources are loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000); // Show loading screen for at least 2 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-24 h-24 mb-4 relative">
+          <div className="absolute inset-0 border-8 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-2 border-8 border-t-transparent border-r-transparent border-b-purple-500 border-l-transparent rounded-full animate-spin animation-delay-150"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-3xl">🖨️</span>
+          </div>
+        </div>
+        <p className="text-lg font-medium text-gray-700">
+          Preparing your 3D experience...
+        </p>
+        <div className="mt-2 w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 animate-progress"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Suspense
       fallback={
@@ -92,6 +127,10 @@ function App() {
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/orders" element={<AdminOrdersPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route
+            path="/admin/create-account"
+            element={<CreateAdminAccountPage />}
+          />
           <Route path="/checkout" element={<CheckoutPage />} />
 
           {/* New routes */}
@@ -106,6 +145,7 @@ function App() {
           <Route path="/shipping" element={<ShippingPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/thank-you" element={<ThankYouPage />} />
+          <Route path="/designers" element={<DesignersPage />} />
 
           {/* Add the tempobook route for Tempo platform */}
           {import.meta.env.VITE_TEMPO === "true" && (
