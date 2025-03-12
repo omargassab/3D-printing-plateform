@@ -13,37 +13,15 @@ export interface DesignUploadData {
 
 export async function uploadDesignFile(file: File) {
   try {
-    // Check if bucket exists and create it if needed
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const designsBucketExists = buckets?.some(
-        (bucket) => bucket.name === "designs",
-      );
-
-      if (!designsBucketExists) {
-        console.log("Creating designs bucket");
-        await supabase.storage.createBucket("designs", { public: true });
-      }
-    } catch (err) {
-      console.error("Error checking/creating bucket:", err);
-    }
-
-    // Create folder path if it doesn't exist
-    const folderPath = "design_files";
-
-    // Generate unique filename
     const fileExt = file.name.split(".").pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `${folderPath}/${fileName}`;
+    const filePath = `design_files/${fileName}`;
 
     const { data, error } = await supabase.storage
       .from("designs")
       .upload(filePath, file);
 
-    if (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
+    if (error) throw error;
 
     // Get public URL
     const { data: urlData } = supabase.storage
@@ -62,37 +40,15 @@ export async function uploadDesignImage(
   isPrimary: boolean = false,
 ) {
   try {
-    // Check if bucket exists and create it if needed
-    try {
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const designsBucketExists = buckets?.some(
-        (bucket) => bucket.name === "designs",
-      );
-
-      if (!designsBucketExists) {
-        console.log("Creating designs bucket");
-        await supabase.storage.createBucket("designs", { public: true });
-      }
-    } catch (err) {
-      console.error("Error checking/creating bucket:", err);
-    }
-
-    // Create folder path if it doesn't exist
-    const folderPath = "design_images";
-
-    // Generate unique filename
     const fileExt = file.name.split(".").pop();
     const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-    const filePath = `${folderPath}/${fileName}`;
+    const filePath = `design_images/${fileName}`;
 
     const { data, error } = await supabase.storage
       .from("designs")
       .upload(filePath, file);
 
-    if (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
+    if (error) throw error;
 
     // Get public URL
     const { data: urlData } = supabase.storage
@@ -116,9 +72,7 @@ export async function createDesign(designData: DesignUploadData) {
     if (sessionError) throw sessionError;
     if (!session) throw new Error("Not authenticated");
 
-    console.log("Creating design with user ID:", session.user.id);
-
-    // Insert design with explicit designer_id
+    // Insert design
     const { data: design, error: designError } = await supabase
       .from("designs")
       .insert({
@@ -134,12 +88,7 @@ export async function createDesign(designData: DesignUploadData) {
       .select()
       .single();
 
-    if (designError) {
-      console.error("Design insert error:", designError);
-      throw designError;
-    }
-
-    console.log("Design created successfully:", design.id);
+    if (designError) throw designError;
 
     // Insert primary image
     if (designData.thumbnailUrl) {
@@ -151,10 +100,7 @@ export async function createDesign(designData: DesignUploadData) {
           is_primary: true,
         });
 
-      if (imageError) {
-        console.error("Primary image insert error:", imageError);
-        throw imageError;
-      }
+      if (imageError) throw imageError;
     }
 
     // Insert additional images
@@ -169,10 +115,7 @@ export async function createDesign(designData: DesignUploadData) {
         .from("design_images")
         .insert(imageInserts);
 
-      if (imagesError) {
-        console.error("Additional images insert error:", imagesError);
-        throw imagesError;
-      }
+      if (imagesError) throw imagesError;
     }
 
     return { success: true, designId: design.id };

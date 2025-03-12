@@ -29,11 +29,6 @@ CREATE TABLE IF NOT EXISTS design_images (
 INSERT INTO storage.buckets (id, name, public) VALUES ('designs', 'designs', true) ON CONFLICT DO NOTHING;
 
 -- Set up storage policies
-DROP POLICY IF EXISTS "Designs bucket public read access" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload design files" ON storage.objects;
-DROP POLICY IF EXISTS "Users can update their own design files" ON storage.objects;
-DROP POLICY IF EXISTS "Users can delete their own design files" ON storage.objects;
-
 CREATE POLICY "Designs bucket public read access"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'designs');
@@ -41,12 +36,12 @@ CREATE POLICY "Designs bucket public read access"
 CREATE POLICY "Authenticated users can upload design files"
   ON storage.objects FOR INSERT
   TO authenticated
-  WITH CHECK (bucket_id = 'designs');
+  USING (bucket_id = 'designs');
 
 CREATE POLICY "Users can update their own design files"
   ON storage.objects FOR UPDATE
   TO authenticated
-  USING (bucket_id = 'designs');
+  USING (bucket_id = 'designs' AND (storage.foldername(name))[1] = 'design_files');
 
 CREATE POLICY "Users can delete their own design files"
   ON storage.objects FOR DELETE
@@ -63,7 +58,7 @@ CREATE POLICY "Public read access for active designs"
 CREATE POLICY "Designers can create their own designs"
   ON designs FOR INSERT
   TO authenticated
-  WITH CHECK (true);
+  WITH CHECK (designer_id = auth.uid());
 
 CREATE POLICY "Designers can update their own designs"
   ON designs FOR UPDATE
